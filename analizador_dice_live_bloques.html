@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101c42">
+<title>Dice Live · Analizador por bloques</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18213b;background:#f3f5ff}
+*{box-sizing:border-box}body{margin:0;max-width:780px;margin-inline:auto;padding:14px}
+.hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#111c43,#253c82 65%,#513e91);color:#fff;padding:22px;border-radius:24px;box-shadow:0 12px 30px #1a24542b}
+.hero:after{content:"🎲";position:absolute;font-size:82px;right:12px;bottom:-12px;opacity:.23;transform:rotate(-15deg)}
+.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:.72rem;font-weight:800;color:#c9d6ff}
+h1{font-size:1.55rem;line-height:1.1;margin:8px 0}.hero p{max-width:80%;font-size:.92rem;color:#e1e8ff;margin:8px 0 0}
+.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#ffffff20;font-size:.78rem;font-weight:700;margin-top:12px}
+.card{background:white;border-radius:20px;padding:17px;margin:13px 0;box-shadow:0 5px 20px #25305d0b;border:1px solid #e8ebf6}
+.head{display:flex;gap:11px;align-items:center;margin-bottom:13px}.num{width:36px;height:36px;border-radius:12px;background:#e9edff;color:#3148a4;display:grid;place-items:center;font-weight:900}.head h2{font-size:1.05rem;margin:0}.sub{color:#707891;font-size:.86rem;margin:4px 0 0}
+.notice{padding:13px 14px;background:#fff7dc;border:1px solid #f3df9a;border-radius:15px;font-size:.87rem;color:#6d5313;line-height:1.45}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+button{border:0;border-radius:14px;padding:13px 7px;font:inherit;font-size:.9rem;font-weight:800;cursor:pointer;transition:transform .08s}
+button:active{transform:scale(.98)}.local{background:#ffe2e5;color:#a51f35}.draw{background:#fff0c4;color:#79520a}.away{background:#dfeaff;color:#2449ad}
+.secondary{background:#edf0f8;color:#303a59}.wipe{background:#fff0f0;color:#a51f35}
+.meterline{display:flex;justify-content:space-between;gap:10px;font-size:.84rem;color:#56617d;margin:14px 0 6px}
+.track{height:12px;background:#e9edf7;border-radius:99px;overflow:hidden}.fill{height:100%;width:0;background:linear-gradient(90deg,#4c64d9,#8a5ce0);border-radius:99px;transition:width .2s}
+.blockstatus{display:flex;align-items:center;gap:8px;background:#f4f5ff;border-radius:14px;padding:11px;margin-top:12px;font-size:.88rem}.dot{width:10px;height:10px;border-radius:50%;background:#7b61d1;flex-shrink:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{padding:13px;border-radius:16px;background:#f8f9fe;border:1px solid #edf0f8}.stat .label{font-size:.8rem;color:#69738e}.stat strong{display:block;font-size:1.45rem;margin:4px 0}.stat small{font-size:.78rem;color:#707891}
+.chip{display:inline-block;padding:4px 8px;border-radius:8px;font-size:.78rem;font-weight:800}.red{background:#ffe2e5;color:#a51f35}.gold{background:#fff0c4;color:#79520a}.blue{background:#dfeaff;color:#2449ad}
+.bars{display:grid;gap:12px;margin-top:14px}.barlabel{display:flex;justify-content:space-between;font-size:.86rem;margin-bottom:5px}.bartrack{height:10px;background:#eef0f7;border-radius:99px;overflow:hidden}.barfill{height:100%;border-radius:99px}.barred{background:#e35a6b}.bargold{background:#e8bd4d}.barblue{background:#4d7de5}
+.rounds{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.round{min-height:62px;border:1px solid #e6eaf4;border-radius:13px;background:#fbfcff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px;text-align:center}.round b{font-size:.72rem;color:#828ba4}.round span{font-size:.8rem;font-weight:800}.round.localround{background:#fff0f1;border-color:#ffd7dc}.round.drawround{background:#fff8e5;border-color:#f7e7b5}.round.awayround{background:#edf3ff;border-color:#d8e5ff}
+input,select{width:100%;padding:12px;border:1px solid #d8deed;border-radius:12px;font:inherit;background:#fff}
+label{display:block;font-size:.86rem;font-weight:750;margin:12px 0 6px}.muted{font-size:.82rem;color:#707891;line-height:1.45}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bigresult{background:linear-gradient(135deg,#f4f5ff,#f9f4ff);border-radius:16px;padding:14px;margin-top:12px}.bigresult strong{font-size:1.35rem;display:block;margin:4px 0}
+.actionrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.actionrow button{flex:1}
+details{border:1px solid #e7eaf4;border-radius:13px;padding:12px;margin-top:10px}summary{font-weight:800;cursor:pointer}
+footer{text-align:center;color:#8189a0;font-size:.76rem;padding:18px 6px}
+@media(min-width:560px){.rounds{grid-template-columns:repeat(10,minmax(0,1fr))}.hero{padding:26px}.hero h1{font-size:1.9rem}}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="eyebrow">Herramienta de práctica · Android</div>
+<h1>Dice Live<br>Analizador por bloques</h1>
+<p>Registra resultados, aprende de las frecuencias y revisa cada grupo de 5 rondas. Sin conexión al casino y sin apuestas automáticas.</p>
+<span class="pill">🎯 Meta: 100 rondas · 20 bloques de 5</span>
+</header>
+
+<div class="notice"><strong>Antes de empezar:</strong> esto no adivina el próximo resultado. Las estadísticas muestran lo que ya ocurrió; una racha no garantiza que continúe. Usa primero el modo de observación y no arriesgues dinero que necesitas.</div>
+
+<section class="card">
+<div class="head"><div class="num">1</div><div><h2>Registra cada ronda</h2><p class="sub">Toca el color que salió al terminar cada ronda.</p></div></div>
+<div class="actions">
+<button class="local" onclick="add('Local')">🔴 Local</button>
+<button class="draw" onclick="add('Empate')">🟡 Empate</button>
+<button class="away" onclick="add('Visitante')">🔵 Visitante</button>
+</div>
+<div class="meterline"><span id="count">0 de 100 rondas</span><strong id="blockCount">Bloque 1 · 0/5</strong></div>
+<div class="track"><div class="fill" id="progress"></div></div>
+<div class="blockstatus"><span class="dot"></span><span id="nextTip">Registra 5 resultados para ver el primer mini-análisis.</span></div>
+<div class="actionrow"><button class="secondary" onclick="undo()">↩ Deshacer</button><button class="secondary" onclick="exportCSV()">⬇ Exportar datos</button></div>
+</section>
+
+<section class="card">
+<div class="head"><div class="num">2</div><div><h2>Tu mini-análisis de cada 5</h2><p class="sub">Cada vez que completes cinco rondas, revisa el bloque recién terminado.</p></div></div>
+<div class="grid">
+<div class="stat"><span class="label">Último bloque · Local</span><strong id="bLocal">—</strong><small id="bLocalPct">A la espera de 5 rondas</small></div>
+<div class="stat"><span class="label">Último bloque · Empate</span><strong id="bDraw">—</strong><small id="bDrawPct">A la espera de 5 rondas</small></div>
+<div class="stat"><span class="label">Último bloque · Visitante</span><strong id="bAway">—</strong><small id="bAwayPct">A la espera de 5 rondas</small></div>
+<div class="stat"><span class="label">Bloques completos</span><strong id="blocksDone">0/20</strong><small>5 resultados por bloque</small></div>
+</div>
+<div class="bigresult"><span class="chip" id="blockBadge">PRIMER BLOQUE PENDIENTE</span><strong id="blockHeadline">Vamos paso a paso</strong><span id="blockExplain" class="muted">Cuando registres cinco rondas, aquí verás qué resultado apareció más veces en ese grupo.</span></div>
+<h3 style="font-size:.95rem;margin:18px 0 9px">Bloque actual</h3>
+<div class="rounds" id="currentBlock"></div>
+<p class="muted">Los grupos se separan así: rondas 1–5, 6–10, 11–15… hasta 96–100.</p>
+</section>
+
+<section class="card">
+<div class="head"><div class="num">3</div><div><h2>Panorama general</h2><p class="sub">Frecuencias de todas las rondas registradas.</p></div></div>
+<div class="grid">
+<div class="stat"><span class="label"><span class="chip red">Local</span></span><strong id="allLocal">0</strong><small id="allLocalPct">0% de la muestra</small></div>
+<div class="stat"><span class="label"><span class="chip gold">Empate</span></span><strong id="allDraw">0</strong><small id="allDrawPct">0% de la muestra</small></div>
+<div class="stat"><span class="label"><span class="chip blue">Visitante</span></span><strong id="allAway">0</strong><small id="allAwayPct">0% de la muestra</small></div>
+<div class="stat"><span class="label">Total de rondas</span><strong id="total">0</strong><small id="sampleState">Muestra en construcción</small></div>
+</div>
+<div class="bars">
+<div><div class="barlabel"><span>🔴 Local</span><strong id="barLText">0%</strong></div><div class="bartrack"><div id="barL" class="barfill barred" style="width:0"></div></div></div>
+<div><div class="barlabel"><span>🟡 Empate</span><strong id="barDText">0%</strong></div><div class="bartrack"><div id="barD" class="barfill bargold" style="width:0"></div></div></div>
+<div><div class="barlabel"><span>🔵 Visitante</span><strong id="barAText">0%</strong></div><div class="bartrack"><div id="barA" class="barfill barblue" style="width:0"></div></div></div>
+</div>
+<details><summary>¿Cómo interpretar estos porcentajes?</summary><p class="muted">Ejemplo: si Visitante aparece en 12 de 20 rondas, su frecuencia observada es 60%. Eso describe solo esas 20 rondas; no significa que tenga 60% de probabilidad en la siguiente. Para evaluar rentabilidad también hacen falta las reglas de pago exactas y una muestra más amplia.</p></details>
+</section>
+
+<section class="card">
+<div class="head"><div class="num">4</div><div><h2>Simulación educativa</h2><p class="sub">Prueba qué habría pasado con una apuesta fija, usando los resultados ya registrados.</p></div></div>
+<div class="twocol">
+<div><label for="stake">Apuesta ficticia (COP)</label><input id="stake" type="number" min="0" step="100" value="100" oninput="renderSim()"></div>
+<div><label for="pick">Resultado elegido</label><select id="pick" onchange="renderSim()"><option>Local</option><option>Empate</option><option>Visitante</option></select></div>
+</div>
+<label for="odds">Ganancia neta por $1 apostado si aciertas</label><input id="odds" type="number" min="0" step=".1" value="1" oninput="renderSim()">
+<p class="muted">Pon la ganancia neta real de la cuota que quieras estudiar. No incluyas la devolución de la apuesta. La simulación no reproduce necesariamente todos los límites y condiciones del casino.</p>
+<div class="grid">
+<div class="stat"><span class="label">Capital de prueba</span><strong>$10.000</strong><small>Saldo inicial ficticio</small></div>
+<div class="stat"><span class="label">Saldo hipotético final</span><strong id="simBalance">$10.000</strong><small id="simNet">Variación: $0</small></div>
+</div>
+<p id="simDesc" class="muted">Registra rondas para simular el resultado.</p>
+</section>
+
+<section class="card">
+<div class="head"><div class="num">5</div><div><h2>Reglas inteligentes de riesgo</h2><p class="sub">El objetivo es aprender, no perseguir pérdidas.</p></div></div>
+<ul class="muted" style="padding-left:20px">
+<li>Con $10.000 COP de capital de prueba, el 1% son $100 y el 2% son $200.</li>
+<li>No dupliques la apuesta para recuperar una pérdida.</li>
+<li>Una muestra de 100 rondas describe una sesión, pero no demuestra una ventaja estable.</li>
+<li>Si estás usando dinero real, fija de antemano un límite de pérdida y detente al alcanzarlo.</li>
+</ul>
+<div class="actionrow"><button class="wipe" onclick="resetAll()">🗑 Borrar historial</button></div>
+</section>
+<footer>Los datos se guardan en el navegador de este dispositivo. No se envían a ningún servidor y no se realizan apuestas.</footer>
+<script>
+const KEY='dice_live_analyzer_blocks_v2';
+let results=[];
+try{results=JSON.parse(localStorage.getItem(KEY)||'[]');if(!Array.isArray(results))results=[]}catch(e){results=[]}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(results))}catch(e){}}
+function add(r){if(results.length>=100){alert('Ya completaste las 100 rondas. Exporta el historial o bórralo para comenzar otra muestra.');return}results.push({result:r,time:new Date().toLocaleString()});save();render()}
+function undo(){if(results.length){results.pop();save();render()}}
+function resetAll(){if(confirm('¿Borrar todo el historial de esta herramienta?')){results=[];save();render()}}
+function money(n){return (n<0?'−':'')+'$'+Math.round(Math.abs(n)).toLocaleString('es-CO')}
+function pct(n,d){return d?((n/d)*100).toFixed(0)+'%':'0%'}
+function counts(arr){let c={Local:0,Empate:0,Visitante:0};arr.forEach(x=>c[x.result]++);return c}
+function render(){
+ let n=results.length,c=counts(results),start=Math.floor(n/5)*5,cur=results.slice(start,Math.min(start+5,100));
+ if(n>0&&n%5===0){start=n-5;cur=results.slice(start,n)}
+ document.getElementById('count').textContent=`${n} de 100 rondas`;
+ document.getElementById('progress').style.width=n+'%';
+ document.getElementById('blockCount').textContent=n>=100?'Muestra completa':`Bloque ${Math.floor(n/5)+1} · ${n%5}/5`;
+ document.getElementById('blocksDone').textContent=Math.floor(n/5)+'/20';
+ document.getElementById('nextTip').textContent=n===0?'Registra 5 resultados para ver el primer mini-análisis.':n%5===0?`¡Bloque ${n/5} completado! Mira el mini-análisis de esas cinco rondas.`:`Llevas ${n%5} de 5 resultados en este bloque. Faltan ${5-(n%5)} para el mini-análisis.`;
+ document.getElementById('allLocal').textContent=c.Local;document.getElementById('allDraw').textContent=c.Empate;document.getElementById('allAway').textContent=c.Visitante;document.getElementById('total').textContent=n;
+ document.getElementById('allLocalPct').textContent=pct(c.Local,n)+' de la muestra';document.getElementById('allDrawPct').textContent=pct(c.Empate,n)+' de la muestra';document.getElementById('allAwayPct').textContent=pct(c.Visitante,n)+' de la muestra';
+ document.getElementById('sampleState').textContent=n===100?'100 rondas registradas':`Faltan ${100-n}`;
+ [['L',c.Local],['D',c.Empate],['A',c.Visitante]].forEach(([k,v])=>{document.getElementById('bar'+k).style.width=pct(v,n);document.getElementById('bar'+k+'Text').textContent=pct(v,n)});
+ const bc=counts(cur),len=cur.length;
+ ['Local','Empate','Visitante'].forEach((name,i)=>{let id=['Local','Draw','Away'][i],v=bc[name];document.getElementById('b'+id).textContent=len?v+'/'+len:'—';document.getElementById('b'+id+'Pct').textContent=len?pct(v,len)+' del bloque':'A la espera de resultados'});
+ let badge=document.getElementById('blockBadge'),headline=document.getElementById('blockHeadline'),explain=document.getElementById('blockExplain');
+ if(!n){badge.textContent='PRIMER BLOQUE PENDIENTE';headline.textContent='Vamos paso a paso';explain.textContent='Cuando registres cinco rondas, aquí verás qué resultado apareció más veces en ese grupo.'}
+ else if(n%5!==0&&n<100){badge.textContent='BLOQUE EN CURSO';headline.textContent=`Faltan ${5-(n%5)} ronda(s)`;explain.textContent='El mini-análisis se actualiza al completar cinco resultados. Las rondas parciales no se comparan como un bloque completo.'}
+ else {let max=Math.max(bc.Local,bc.Empate,bc.Visitante),winners=Object.keys(bc).filter(k=>bc[k]===max);badge.textContent=`BLOQUE ${Math.ceil(n/5)} · COMPLETADO`;headline.textContent=winners.length>1?'Bloque equilibrado':`Más frecuente: ${winners[0]}`;explain.textContent=`En las últimas cinco rondas registradas: Local ${bc.Local}, Empate ${bc.Empate}, Visitante ${bc.Visitante}. Esto resume el bloque; no predice la siguiente ronda.`}
+ const box=document.getElementById('currentBlock');box.innerHTML='';
+ if(!cur.length){box.innerHTML='<div class="muted">Aquí aparecerán tus cinco resultados más recientes del bloque actual.</div>'}
+ else cur.forEach((x,i)=>{let d=document.createElement('div');d.className='round '+(x.result==='Local'?'localround':x.result==='Empate'?'drawround':'awayround');d.innerHTML='<b>RONDA '+(start+i+1)+'</b><span>'+ (x.result==='Local'?'🔴':x.result==='Empate'?'🟡':'🔵')+' '+x.result+'</span>';box.appendChild(d)});
+ renderSim()
+}
+function renderSim(){
+ let stake=Math.max(0,Number(document.getElementById('stake').value)||0),pick=document.getElementById('pick').value,odds=Math.max(0,Number(document.getElementById('odds').value)||0),net=0,w=0,l=0;
+ results.forEach(x=>{if(x.result===pick){net+=stake*odds;w++}else{net-=stake;l++}});
+ document.getElementById('simBalance').textContent=money(10000+net);document.getElementById('simNet').textContent='Variación: '+money(net);
+ document.getElementById('simDesc').textContent=results.length?`Simulación sobre ${results.length} resultados registrados: ${w} aciertos y ${l} fallos con apuesta fija de ${money(stake)}. Es un cálculo histórico hipotético, no una recomendación de apuesta.`:'Registra rondas para simular el resultado.'
+}
+function exportCSV(){if(!results.length){alert('Primero registra al menos una ronda.');return}let rows=[['ronda','bloque_de_5','resultado','fecha_hora'],...results.map((x,i)=>[i+1,Math.floor(i/5)+1,x.result,x.time])];let csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');let blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='dice_live_analisis_por_bloques.csv';a.click();URL.revokeObjectURL(url)}
+render();
+</script>
+</body></html>
